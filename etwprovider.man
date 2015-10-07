@@ -1,12 +1,12 @@
 ﻿<?xml version='1.0' encoding='utf-8' standalone='yes'?>
-<!-- 
+<!--
 This files defines a set of ETW (Event Tracing for Windows) providers that can
 be used to emit events into an ETW stream for recording with xperf or logman.
 When used with the xperf kernel providers these can help investigate performance
 problems by adding arbitrary context to the kernel data.
 
 This file is built using the following custom build tool command line:
-  mc.exe -um %(Filename)%(Extension) -z %(Filename)Generated 
+  mc.exe -um %(Filename)%(Extension) -z %(Filename)Generated
 The main outputs are:
   %(Filename)Generated.h;%(Filename)Generated.rc
 
@@ -14,7 +14,7 @@ The header file should be included by one or more source files, and the resource
 file should either be added to your project or included into an existing resource
 file.
 
-The header file contains macros and functions to emit events. The 
+The header file contains macros and functions to emit events. The
 
 For information on writing an instrumentation manifest see
 http://msdn.microsoft.com/en-us/library/dd996930(VS.85).aspx
@@ -26,7 +26,7 @@ http://msdn.microsoft.com/en-us/library/aa382774(v=VS.85).aspx
 
 See also the Windows Platform SDK SimpleProvider and AdvancedProvider samples
 and the Scenario library at http://archive.msdn.microsoft.com/Scenario
-      
+
 Before recording traces you need to execute these commands to register the provider:
 xcopy /y yourgame.exe %temp%
 wevtutil um etwprovider.man

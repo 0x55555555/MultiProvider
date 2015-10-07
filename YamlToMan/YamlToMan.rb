@@ -53,8 +53,8 @@ class Node
     children = @children.map{ |c| c.to_xml(line_start: line_start + tab, tab: tab, new_line: new_line) }
 
     return line_start + opening_xml() + new_line +
-        children.join(new_line) +
-      line_start + closing_xml()
+        children.join() +
+      line_start + closing_xml() + new_line
   end
 
   def opening_xml()
