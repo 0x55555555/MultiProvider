@@ -83,16 +83,16 @@ def dump(v)
   instrumentationManifest = Node.new :instrumentationManifest
   instrumentationManifest.xmlns = "http://schemas.microsoft.com/win/2004/08/events"
 
-  instrumentation = instrumentationManifest << :instrumentation
+  instrumentation = instrumentationManifest.add(:instrumentation)
   instrumentation.set_attr 'xmlns:win', "http://manifests.microsoft.com/win/2004/08/windows/events"
   instrumentation.set_attr 'xmlns:xs', "http://www.w3.org/2001/XMLSchema"
   instrumentation.set_attr 'xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance"
 
-  top_events = instrumentation << :events
+  top_events = instrumentation.add(:events)
   top_events.xmlns = "http://schemas.microsoft.com/win/2004/08/events"
 
   providers.each do |name, contents|
-    provider = top_events << :provider
+    provider = top_events.add(:provider)
     provider.guid = "{231CF54B-22A0-49E4-A59A-47052A30FFED}"
     provider.name = "Multi-Main"
     provider.symbol = "MULTI_MAIN"
