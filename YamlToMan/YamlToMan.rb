@@ -1,6 +1,10 @@
 require 'yaml'
 
 yaml = %{
+types:
+  position:
+  - x: int32_t
+  - y: int32_t
 providers:
   test:
     events:
@@ -9,12 +13,22 @@ providers:
         - time: std::uint64_t
         - time2: std::uint8_t
       stop:
+        task: x
+        opcode: y
+        keywords:
+        - u
+        - v
   test2:
     events:
       start:
         data:
         - time: std::uint64_t
         - time2: std::uint8_t
+        task: x
+        opcode: y
+        keywords:
+        - u
+        - v
       stop:
 }
 
@@ -25,10 +39,12 @@ class Node
     @children = []
   end
 
-  def <<(node)
+  def add(node)
     if (node.is_a?(Symbol))
       node = Node.new(node)
     end
+
+    yield(node) if block_given?
 
     @children << node
     return node
@@ -59,7 +75,8 @@ class Node
 
   def opening_xml()
     attributes = @attributes.map{ |k, v| "#{k}=\"#{escape(v)}\"" }.join(" ")
-    return "<#{@name} #{attributes}>"
+    attributes.prepend(" ") unless attributes.empty?
+    return "<#{@name}#{attributes}>"
   end
 
   def closing_xml()
@@ -88,20 +105,28 @@ def dump(v)
   instrumentation.set_attr 'xmlns:xs', "http://www.w3.org/2001/XMLSchema"
   instrumentation.set_attr 'xmlns:xsi', "http://www.w3.org/2001/XMLSchema-instance"
 
-  top_events = instrumentation.add(:events)
-  top_events.xmlns = "http://schemas.microsoft.com/win/2004/08/events"
+  instrumentation.add(:events) do |tl|
+    tl.xmlns = "http://schemas.microsoft.com/win/2004/08/events"
 
-  providers.each do |name, contents|
-    provider = top_events.add(:provider)
-    provider.guid = "{231CF54B-22A0-49E4-A59A-47052A30FFED}"
-    provider.name = "Multi-Main"
-    provider.symbol = "MULTI_MAIN"
-    provider.messageFileName = "%temp%\TT_Api.dll"
-    provider.resourceFileName = "%temp%\TT_Api.dll"
+    providers.each do |name, contents|
+      tl.add(:provider) do |p|
+        p.guid = "{231CF54B-22A0-49E4-A59A-47052A30FFED}"
+        p.name = "Multi-Main"
+        p.symbol = "MULTI_MAIN"
+        p.messageFileName = "%temp%\TT_Api.dll"
+        p.resourceFileName = "%temp%\TT_Api.dll"
 
-    events = contents["events"]
+        events = contents["events"]
 
-    #puts name, events
+        templates = p.add(:templates)
+        keywords = p.add(:keywords)
+        opcodes = p.add(:opcodes)
+        tasks = p.add(:tasks)
+        events = p.add(:events)
+      end
+
+      #puts name, events
+    end
   end
 
   puts instrumentationManifest.to_xml
