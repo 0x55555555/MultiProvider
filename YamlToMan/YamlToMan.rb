@@ -1,4 +1,5 @@
 require 'yaml'
+require_relative 'SimpleXml'
 
 yaml = %{
 types:
@@ -32,68 +33,7 @@ providers:
       stop:
 }
 
-class Node
-  def initialize(name)
-    @name = name
-    @attributes = { }
-    @children = []
-  end
-
-  def add(node)
-    if (node.is_a?(Symbol))
-      node = Node.new(node)
-    end
-
-    yield(node) if block_given?
-
-    @children << node
-    return node
-  end
-
-  def set_attr(name, value)
-    @attributes[name] = value
-  end
-
-  def method_missing(method_sym, *arguments, &block)
-    name = method_sym
-    if (method_sym.to_s.end_with?('='))
-      name = method_sym[0...-1].to_sym
-      @attributes[name] = arguments[0]
-    end
-
-    return @attributes[name]
-  end
-
-  def to_xml(line_start:'', tab:"  ", new_line:"\n")
-
-    children = @children.map{ |c| c.to_xml(line_start: line_start + tab, tab: tab, new_line: new_line) }
-
-    return line_start + opening_xml() + new_line +
-        children.join() +
-      line_start + closing_xml() + new_line
-  end
-
-  def opening_xml()
-    attributes = @attributes.map{ |k, v| "#{k}=\"#{escape(v)}\"" }.join(" ")
-    attributes.prepend(" ") unless attributes.empty?
-    return "<#{@name}#{attributes}>"
-  end
-
-  def closing_xml()
-    return "</#{@name}>"
-  end
-
-  def escape(value)
-    return value
-      .gsub('"', '&quot;')
-      .gsub("'", '&apos;')
-      .gsub('<', '&lt;')
-      .gsub('>', '&gt;')
-      .gsub('&', '&amp;')
-  end
-end
-
-def dump(v)
+def to_man(v)
   data = v.to_ruby
   providers = data["providers"]
 
@@ -118,18 +58,110 @@ def dump(v)
 
         events = contents["events"]
 
-        templates = p.add(:templates)
-        keywords = p.add(:keywords)
-        opcodes = p.add(:opcodes)
-        tasks = p.add(:tasks)
-        events = p.add(:events)
+        p.add(:templates) do |t|
+          t.add(:template) do |t|
+            t.tid = "T_Start"
+
+            t.add(:data) do |d|
+              d.inType = "win:AnsiString"
+              d.name="Description"
+            end
+          end
+        end
+        p.add(:keywords) do |k|
+          k.add(:keyword) do |k|
+            k.name = "HighFrequency"
+            k.mask = "0x2"
+          end
+        end
+
+        p.add(:opcodes) do |o|
+          o.add(:opcode) do |o|
+            o.name = "Begin"
+            o.symbol = "_BeginOpcode"
+            o.value = "10"
+            o.message = "message"
+          end
+        end
+
+        p.add(:tasks) do |t|
+          t.add(:task) do |t|
+            t.name = "Block"
+            t.symbol = "Block_Task"
+            t.value = "1"
+            t.eventGUID = "{4E9A75EB-4FBA-4BA0-9A1B-2175B671A16D}"
+            t.message = "message"
+          end
+        end
+
+        p.add(:events) do |e|
+          e.add(:event) do |e|
+            e.symbol = "Start"
+            e.template = "T_Start"
+            e.value = "100"
+            e.task = "Block"
+            e.opcode = "Begin"
+            e.keywords = "NormalFrequency"
+            e.message = "message"
+          end
+        end
       end
 
       #puts name, events
     end
   end
 
-  puts instrumentationManifest.to_xml
+  puts instrumentationManifest.to_xml_document
 end
 
-dump(YAML.parse(yaml))
+def to_wprp(v)
+  data = v.to_ruby
+
+  wprp = Node.new :WindowsPerformanceRecorder
+  wprp.Author="Bruce Dawson"
+  wprp.Comments = "Auto generated"
+  wprp.Copyright = ""
+  wprp.Version = "1.0"
+  wprp.Tag = "Enables providers"
+
+  wprp.add(:Profiles) do |p|
+    p.add(:EventCollector) do |ec|
+      id = 'MultiCollector'
+      ec.Id = id
+      ec.Name="Sample Event Collector"
+
+      ec.add(:BufferSize) do |bs|
+        bs.Value = 64
+      end
+      ec.add(:Buffers) do |bs|
+        bs.Value = 64
+      end
+
+      ec.add(:Profile) do |p|
+        p.Id = "MultiProvider.Verbose.Memory"
+        p.Name = 'MultiProvider'
+        p.Description = 'some text'
+        p.DetailLevel = 'Verbose'
+        p.LoggingMode = 'Memory'
+
+        p.add(:Collectors) do |c|
+          c.add(:EventCollectorId) do |ec|
+            ec.Value = id
+
+            ec.add(:EventProviders) do |p|
+              p.add(:EventProvider) do |p|
+                p.Id = "Multi-Main-Provider"
+                p.Name = "Multi-Main"
+              end
+            end
+          end
+        end
+      end
+    end
+  end
+
+  puts wprp.to_xml_document
+end
+
+to_man(YAML.parse(yaml))
+#to_wprp(YAML.parse(yaml))
