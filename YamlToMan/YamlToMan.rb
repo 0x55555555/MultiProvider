@@ -155,7 +155,7 @@ def to_wprp(v)
   data = v.to_ruby
 
   wprp = Node.new :WindowsPerformanceRecorder
-  wprp.Author="Bruce Dawson"
+  wprp.Author = "Bruce Dawson"
   wprp.Comments = "Auto generated"
   wprp.Copyright = ""
   wprp.Version = "1.0"
