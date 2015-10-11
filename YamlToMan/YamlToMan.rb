@@ -33,6 +33,21 @@ providers:
       stop:
 }
 
+def make_symbol(*args)
+  return args.join('_').upcase.tr('^A-Z0-9', '_')
+end
+
+def format_list(p, element, list)
+  group = (element.to_s + "s").to_sym
+  p.add(group) do |c|
+    list.each do |element_data|
+      c.add(element) do |c|
+        yield(c, element_data)
+      end
+    end
+  end
+end
+
 def to_man(v)
   data = v.to_ruby
   providers = data["providers"]
@@ -50,60 +65,82 @@ def to_man(v)
 
     providers.each do |name, contents|
       tl.add(:provider) do |p|
+        name = "Multi-Main"
+        symbol = make_symbol(name)
         p.guid = "{231CF54B-22A0-49E4-A59A-47052A30FFED}"
-        p.name = "Multi-Main"
-        p.symbol = "MULTI_MAIN"
+        p.name = name
+        p.symbol = symbol
         p.messageFileName = "%temp%\TT_Api.dll"
         p.resourceFileName = "%temp%\TT_Api.dll"
 
         events = contents["events"]
 
-        p.add(:templates) do |t|
-          t.add(:template) do |t|
-            t.tid = "T_Start"
-
-            t.add(:data) do |d|
-              d.inType = "win:AnsiString"
-              d.name="Description"
-            end
-          end
-        end
-        p.add(:keywords) do |k|
-          k.add(:keyword) do |k|
-            k.name = "HighFrequency"
-            k.mask = "0x2"
-          end
+        format_list(p, :channel, [2]) do |c, d|
+          type = "Admin"
+          c.chid = "c1"
+          c.name = "#{name}/#{type}"
+          c.type = type
+          c.enabled = true
         end
 
-        p.add(:opcodes) do |o|
-          o.add(:opcode) do |o|
-            o.name = "Begin"
-            o.symbol = "_BeginOpcode"
-            o.value = "10"
-            o.message = "message"
+        format_list(p, :template, [2]) do |t, d|
+          t.tid = "T_Start"
+
+          t.add(:data) do |d|
+            d.inType = "win:AnsiString"
+            d.name = "Description"
           end
         end
 
-        p.add(:tasks) do |t|
-          t.add(:task) do |t|
-            t.name = "Block"
-            t.symbol = "Block_Task"
-            t.value = "1"
-            t.eventGUID = "{4E9A75EB-4FBA-4BA0-9A1B-2175B671A16D}"
-            t.message = "message"
-          end
+        format_list(p, :filter, [2]) do |f, d|
+          name = "Pid"
+          f.name = name
+          f.value = "1"
+          f.tid = "t1"
+          f.symbol = make_symbol(symbol, :filter, name)
         end
 
-        p.add(:events) do |e|
-          e.add(:event) do |e|
-            e.symbol = "Start"
-            e.template = "T_Start"
-            e.value = "100"
-            e.task = "Block"
-            e.opcode = "Begin"
-            e.keywords = "NormalFrequency"
-            e.message = "message"
-          end
+        format_list(p, :level, [2]) do |l, d|
+          name = "NotValid"
+          l.name = name
+          l.value = 16 # 16-255
+          l.symbol = make_symbol(symbol, :level, name)
+          l.message = "message"
+        end
+
+        format_list(p, :keyword, [2]) do |k, d|
+          k.name = "HighFrequency"
+          k.mask = "0x2"
+        end
+
+        format_list(p, :opcode, [2]) do |o, d|
+          name = "Begin"
+          o.name = "Begin"
+          o.symbol = make_symbol(symbol, :opcode, name)
+          o.value = "10"
+          o.message = "message"
+        end
+
+        format_list(p, :task, [2]) do |t, d|
+          name = "Block"
+          t.name = name
+          t.symbol = make_symbol(symbol, :task, name)
+          t.value = "1"
+          t.eventGUID = "{4E9A75EB-4FBA-4BA0-9A1B-2175B671A16D}"
+          t.message = "message"
+        end
+
+
+        format_list(p, :event, [2]) do |e, d|
+          e.symbol = "Start"
+          e.level = "win:Error" # win:Critical win:Error win:Warning win:Informational win:Verbose or NotValid
+          e.channel = "c2"
+          e.template = "T_Start"
+          e.value = "100"
+          e.task = "Block"
+          e.opcode = "Begin"
+          e.keywords = "NormalFrequency"
+          e.message = "message"
         end
       end
 
@@ -164,4 +201,4 @@ def to_wprp(v)
 end
 
 to_man(YAML.parse(yaml))
-#to_wprp(YAML.parse(yaml))
+to_wprp(YAML.parse(yaml))
