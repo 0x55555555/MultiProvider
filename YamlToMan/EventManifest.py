@@ -27,6 +27,14 @@ class Provider(ManifestBase):
 
         return []
 
+    @property
+    def guid(self):
+        return "guid."
+
+    @property
+    def binary_filename(self):
+        return "%temp%/pork.dll"
+
 class ItemBase(ManifestBase):
     def __init__(self, name, **kwargs):
         super().__init__(name)
@@ -152,9 +160,9 @@ def to_manifest_xml(providers):
         provider = container_root.add('provider',
             name = p.name,
             symbol = make_symbol(p.name),
-            guid = "guid.",
-            messageFileName = "%temp%\TT_Api.dll",
-            resourceFileName = "%temp%\TT_Api.dll"
+            guid = p.guid,
+            messageFileName = p.binary_filename,
+            resourceFileName = p.binary_filename
         )
 
         def build_container(provider, xml, name, build):
