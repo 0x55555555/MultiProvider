@@ -131,6 +131,7 @@ class Template(ItemBase):
 class Channel(ItemBase):
     def __init__(self, name, **kwargs):
         super().__init__(name)
+        self._type = kwargs.get("type", "Application")
 
     @property
     def enabled(self):
@@ -138,7 +139,7 @@ class Channel(ItemBase):
 
     @property
     def type(self):
-        return "Admin"
+        return self._type
 
 def to_manifest_xml(providers):
     root = xml.Node(
