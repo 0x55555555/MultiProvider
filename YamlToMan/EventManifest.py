@@ -16,10 +16,14 @@ class Provider(ManifestBase):
     def __init__(self, name):
         super().__init__(name)
         self.contents = collections.defaultdict(lambda: [])
+        self._next_value = 0
 
     def add(self, obj):
         container = self.contents[obj.__class__.__name__.lower()]
         container.append(obj)
+
+        obj.assign_value(self._next_value)
+        self._next_value += 1
 
     def container(self, name):
         if (name in self.contents):
@@ -39,10 +43,14 @@ class ItemBase(ManifestBase):
     def __init__(self, name, **kwargs):
         super().__init__(name)
         self._message = kwargs.get("message", None)
+        self._value = 0
+
+    def assign_value(self, value):
+        self._value = value
 
     @property
     def value(self):
-        return 0
+        return self._value
 
     @property
     def message(self):
