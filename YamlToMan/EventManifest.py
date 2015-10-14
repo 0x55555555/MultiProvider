@@ -12,6 +12,18 @@ class ManifestBase:
     def name(self):
         return self._name
 
+class Profile(ManifestBase):
+    def __init__(self, name):
+        super().__init__(name)
+        self._providers = []
+
+    def add(self, providers, **kwargs):
+        self._providers.append((providers, kwargs))
+
+    @property
+    def providers(self):
+        return self._providers
+
 class Provider(ManifestBase):
     def __init__(self, name):
         super().__init__(name)
@@ -265,7 +277,7 @@ def to_manifest_xml(providers):
 
     return root.to_xml_document()
 
-def to_wprp_xml(providers):
+def to_wprp_xml(profiles):
 
     wprp = xml.Node("WindowsPerformanceRecorder")
     wprp.attrs(Author = "N/A",
@@ -275,44 +287,51 @@ def to_wprp_xml(providers):
         Tag = "Enables providers"
     )
 
-    id = 'MultiCollector'
-    description = 'some text'
-    buffer_size = 64
-    buffers = 64
+    for profile in profiles:
+        description = 'some text'
+        buffer_size = 64
+        buffers = 64
 
-    profiles = wprp.add("Profiles")
-    ec = profiles.add("EventCollector",
-        Id = id,
-        Name = "Sample Event Collector"
-    )
+        profiles_xml = wprp.add("Profiles")
+        ec = profiles_xml.add("EventCollector",
+            Id = profile.name,
+            Name = "Sample Event Collector"
+        )
 
-    ec.add("BufferSize", Value = buffer_size)
-    ec.add("Buffers", Value = buffers)
+        ec.add("BufferSize", Value = buffer_size)
+        ec.add("Buffers", Value = buffers)
 
     detail_levels = [ "Verbose", "Light" ]
     logging_types = [ "Memory", "File" ]
 
-    for detail_level in detail_levels:
-        for logging_type in logging_types:
-            collector_name = id + "_Profile"
+    for profile in profiles:
+        for detail_level in detail_levels:
+            for logging_type in logging_types:
+                collector_name = profile.name + "_Profile"
 
-            p = ec.add("Profile",
-                Id = "{}.{}.{}".format(collector_name, detail_level, logging_type),
-                Name = collector_name,
-                Description = description,
-                DetailLevel = detail_level,
-                LoggingMode = logging_type
-            )
-
-            c = p.add("Collectors")
-            eci = c.add("EventCollectorId", Value = id)
-
-            providers_xml = eci.add("EventProviders")
-            for p in providers:
-                provider_xml = providers_xml.add("EventProvider",
-                    Id = p.name + "_Provider",
-                    Name = p.name
+                p = ec.add("Profile",
+                    Id = "{}.{}.{}".format(collector_name, detail_level, logging_type),
+                    Name = collector_name,
+                    Description = description,
+                    DetailLevel = detail_level,
+                    LoggingMode = logging_type
                 )
+
+                c = p.add("Collectors")
+                eci = c.add("EventCollectorId", Value = profile.name)
+
+                providers_xml = eci.add("EventProviders")
+                for p, opts in profile.providers:
+                    if opts.get(logging_type.lower(), True) == False:
+                        continue
+
+                    if opts.get(detail_level.lower(), True) == False:
+                        continue
+
+                    provider_xml = providers_xml.add("EventProvider",
+                        Id = p.name + "_Provider",
+                        Name = p.name
+                    )
     return wprp.to_xml_document()
 
 p = Provider("Multi-Main")
@@ -351,4 +370,8 @@ p.add(ev)
 
 
 print(to_manifest_xml([p]))
-print(to_wprp_xml([p]))
+
+profile_1 = Profile("General")
+profile_1.add(p)
+
+print(to_wprp_xml([profile_1]))
