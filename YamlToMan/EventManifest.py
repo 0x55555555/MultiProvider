@@ -368,6 +368,11 @@ ev = Event("pork",
     )
 p.add(ev)
 
+ev = Event("pork2",
+    template = templ
+    )
+p.add(ev)
+
 
 print(to_manifest_xml([p]))
 
