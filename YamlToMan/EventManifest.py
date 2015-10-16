@@ -5,11 +5,17 @@ def make_symbol(*args):
     return re.sub('[^0-9A-Z]+', '_', '_'.join(args).upper())
 
 class ManifestBase:
+    """
+    Base to all nameable objects in the manifest.
+    """
     def __init__(self, name):
         self._name = name
 
     @property
     def name(self):
+        """
+        Identifier for the object
+        """
         return self._name
 
 class Profile(ManifestBase):
@@ -25,6 +31,9 @@ class Profile(ManifestBase):
         return self._providers
 
 class Provider(ManifestBase):
+    """
+    Base object which provides instrumentation for an executable
+    """
     def __init__(self, name):
         super().__init__(name)
         self.contents = collections.defaultdict(lambda: [])
