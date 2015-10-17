@@ -1,5 +1,5 @@
 import simple_xml as xml
-import collections, re
+import collections, re, uuid, hashlib
 
 def make_symbol(*args):
     return re.sub('[^0-9A-Z]+', '_', '_'.join(args).upper())
@@ -54,7 +54,10 @@ class Provider(ManifestBase):
 
     @property
     def guid(self):
-        return "guid."
+        m = hashlib.md5()
+        m.update(bytearray(self.name, 'utf8'))
+        uuid_bytes = m.digest()
+        return '{%s}' % uuid.UUID(bytes=uuid_bytes)
 
     @property
     def binary_filename(self):
