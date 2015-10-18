@@ -19,12 +19,17 @@ class ManifestBase:
         return self._name
 
 class Profile(ManifestBase):
-    def __init__(self, name):
+    def __init__(self, name, gui_name):
         super().__init__(name)
         self._providers = []
+        self._gui_name = gui_name
 
     def add(self, providers, **kwargs):
         self._providers.append((providers, kwargs))
+
+    @property
+    def gui_name(self):
+        return self._gui_name
 
     @property
     def providers(self):
@@ -37,7 +42,7 @@ class Provider(ManifestBase):
     def __init__(self, name):
         super().__init__(name)
         self.contents = collections.defaultdict(lambda: [])
-        self._next_value = 0
+        self._next_value = 1
 
     def add(self, obj):
         container = self.contents[obj.__class__.__name__.lower()]
@@ -70,6 +75,8 @@ class ItemBase(ManifestBase):
         self._value = 0
 
     def assign_value(self, value):
+        if hasattr(self.__class__, 'minimum_id'):
+            value += self.__class__.minimum_id
         self._value = value
 
     @property
@@ -121,6 +128,8 @@ class Task(ItemBase):
         super().__init__(name)
 
 class Opcode(ItemBase):
+    minimum_id = 10
+
     def __init__(self, name, **kwargs):
         super().__init__(name)
 
@@ -141,12 +150,10 @@ class Filter(ItemBase):
         return None
 
 class Level(ItemBase):
+    minimum_id = 16
+
     def __init__(self, name, **kwargs):
         super().__init__(name)
-
-    @property
-    def level(self):
-        return 16 # 16-255
 
 class Template(ItemBase):
     def __init__(self, name, **kwargs):
@@ -163,7 +170,7 @@ class Template(ItemBase):
 class Channel(ItemBase):
     def __init__(self, name, **kwargs):
         super().__init__(name)
-        self._type = kwargs.get("type", "Application")
+        self._type = kwargs.get("type", "Operational")
 
     @property
     def enabled(self):
@@ -300,7 +307,7 @@ def to_wprp_xml(profiles):
     )
 
     for profile in profiles:
-        description = 'some text'
+        description = profile.gui_name
         buffer_size = 64
         buffers = 64
 
@@ -321,7 +328,7 @@ def to_wprp_xml(profiles):
             for logging_type in logging_types:
                 collector_name = profile.name + "_Profile"
 
-                p = ec.add("Profile",
+                p = profiles_xml.add("Profile",
                     Id = "{}.{}.{}".format(collector_name, detail_level, logging_type),
                     Name = collector_name,
                     Description = description,
@@ -386,9 +393,11 @@ ev = Event("pork2",
 p.add(ev)
 
 
-print(to_manifest_xml([p]))
+with open('test.man', 'w') as file:
+    file.write(to_manifest_xml([p]))
 
-profile_1 = Profile("General")
+profile_1 = Profile("General", "Sweet test profile")
 profile_1.add(p)
 
-print(to_wprp_xml([profile_1]))
+with open('test.wprp', 'w') as file:
+    file.write(to_wprp_xml([profile_1]))
